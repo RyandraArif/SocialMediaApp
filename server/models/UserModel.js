@@ -33,6 +33,11 @@ class UserModel {
       throw new Error("Username or email already exists");
     }
 
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isValidEmail) {
+      throw new Error("Invalid email format");
+    }
+
     const hashedPassword = hashPassword(password);
     password = hashedPassword;
 
@@ -73,6 +78,10 @@ class UserModel {
 
   static async getUserById(userId) {
     return await this.collection().findOne({ _id: new ObjectId(userId) });
+  }
+
+  static async getUserByEmail(email) {
+    return await this.collection().findOne({ email });
   }
 }
 

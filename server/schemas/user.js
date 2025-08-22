@@ -1,4 +1,5 @@
-const { hashPassword } = require("../helpers/bcrypt");
+const { hashPassword, comparePassword } = require("../helpers/bcrypt");
+const { signToken } = require("../helpers/jwt");
 const { UserModel } = require("../models/UserModel");
 
 const typeDefs = `#graphql
@@ -50,7 +51,7 @@ const resolvers = {
       });
     },
     login: async (_, { email, password }) => {
-      const user = await UserModel.findUserByEmail(email);
+      const user = await UserModel.getUserByEmail(email);
       if (!user) {
         throw new Error("User not found");
       }
@@ -60,7 +61,7 @@ const resolvers = {
         throw new Error("Invalid password");
       }
 
-      const accessToken = generateToken({ userId: user._id });
+      const accessToken = signToken({ userId: user._id });
       return {
         accessToken,
         message: "Login successful",

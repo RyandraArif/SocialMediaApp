@@ -1,3 +1,4 @@
+require("dotenv").config();
 const { ApolloServer } = require("@apollo/server");
 const { startStandaloneServer } = require("@apollo/server/standalone");
 const { verifyToken } = require("./helpers/bcrypt");
