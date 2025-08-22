@@ -1,7 +1,6 @@
 const { hashPassword, comparePassword } = require("../helpers/bcrypt");
 const { signToken } = require("../helpers/jwt");
 const { UserModel } = require("../models/UserModel");
-const FollowModel = require("../models/FollowModel");
 
 const typeDefs = `#graphql
   type User {
@@ -53,7 +52,7 @@ const resolvers = {
       if (!user) {
         throw new Error("User not found");
       }
-      // followers dan following sudah berupa array of objek dari hasil aggregation
+
       return {
         name: user.name,
         username: user.username,

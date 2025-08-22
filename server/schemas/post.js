@@ -43,7 +43,7 @@ const typeDefs = `#graphql
 const resolvers = {
   Query: {
     getPosts: async () => {
-      // await auth();
+      await auth();
       const postCache = await redis.get("postCache");
       if (postCache) {
         console.log("masuk cache");
@@ -61,7 +61,7 @@ const resolvers = {
     },
     getPostById: async (_, { postId }) => {
       const post = await PostModel.getPostById(postId);
-      // Nama author sudah tersedia di hasil aggregation
+
       return post ? { ...post, authorName: post.author.name } : null;
     },
     getPostsByUser: async (_, { authorId }) => {
