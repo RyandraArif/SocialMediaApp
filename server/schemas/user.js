@@ -21,8 +21,14 @@ const typeDefs = `#graphql
     name: String
     username: String
     email: String
-    followers: [ID!]
-    following: [ID!]
+    followers: [UserSummary!]
+    following: [UserSummary!]
+  }
+
+  type UserSummary {
+    _id: ID!
+    username: String!
+    name: String!
   }
 
   type Query {
@@ -44,28 +50,16 @@ const resolvers = {
     getUserById: async (_, { userId }, { auth }) => {
       await auth();
       const user = await UserModel.getUserById(userId);
-
       if (!user) {
         throw new Error("User not found");
       }
-
-      const rawFollowers = (await FollowModel.getFollowers(userId)) || [];
-      const rawFollowing = (await FollowModel.getFollowing(userId)) || [];
-
-      const followers = rawFollowers.map((f) => {
-        return f.followerId.toString();
-      });
-
-      const following = rawFollowing.map((f) => {
-        return f.followingId.toString();
-      });
-
+      // followers dan following sudah berupa array of objek dari hasil aggregation
       return {
         name: user.name,
         username: user.username,
         email: user.email,
-        followers,
-        following,
+        followers: user.followers || [],
+        following: user.following || [],
       };
     },
   },

@@ -32,7 +32,7 @@ class PostModel {
     return await this.collection().findOne({ _id: result.insertedId });
   }
 
-  static async getPost() {
+  static async getPosts() {
     return await this.collection()
       .aggregate([
         { $sort: { createdAt: -1 } },
@@ -50,7 +50,80 @@ class PostModel {
   }
 
   static async getPostById(postId) {
-    return await this.collection().findOne({ _id: new ObjectId(postId) });
+    const pipeline = [
+      { $match: { _id: new ObjectId(postId) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: "$author" },
+      // Lookup untuk komentar
+      { $unwind: { path: "$comments", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "comments.username",
+          foreignField: "username",
+          as: "commentUser",
+        },
+      },
+      { $unwind: { path: "$commentUser", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          "comments.name": "$commentUser.name",
+          "comments.username": "$commentUser.username",
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          post: { $first: "$$ROOT" },
+          comments: { $push: "$comments" },
+        },
+      },
+      {
+        $addFields: {
+          "post.comments": "$comments",
+        },
+      },
+      { $replaceRoot: { newRoot: "$post" } },
+      // Lookup untuk like
+      { $unwind: { path: "$likes", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "likes.username",
+          foreignField: "username",
+          as: "likeUser",
+        },
+      },
+      { $unwind: { path: "$likeUser", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          "likes.name": "$likeUser.name",
+          "likes.username": "$likeUser.username",
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          post: { $first: "$$ROOT" },
+          likes: { $push: "$likes" },
+        },
+      },
+      {
+        $addFields: {
+          "post.likes": "$likes",
+        },
+      },
+      { $replaceRoot: { newRoot: "$post" } },
+    ];
+    const result = await this.collection().aggregate(pipeline).toArray();
+    return result[0] || null;
   }
 
   static async getPostsByUser(authorId) {

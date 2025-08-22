@@ -77,7 +77,86 @@ class UserModel {
   }
 
   static async getUserById(userId) {
-    return await this.collection().findOne({ _id: new ObjectId(userId) });
+    const pipeline = [
+      { $match: { _id: new ObjectId(userId) } },
+      // Lookup followers
+      {
+        $lookup: {
+          from: "follows",
+          localField: "_id",
+          foreignField: "followingId",
+          as: "followersData",
+        },
+      },
+      { $unwind: { path: "$followersData", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "followersData.followerId",
+          foreignField: "_id",
+          as: "followerUser",
+        },
+      },
+      { $unwind: { path: "$followerUser", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$_id",
+          user: { $first: "$$ROOT" },
+          followers: {
+            $push: {
+              _id: "$followerUser._id",
+              username: "$followerUser.username",
+              name: "$followerUser.name",
+            },
+          },
+        },
+      },
+      // Lookup following
+      {
+        $lookup: {
+          from: "follows",
+          localField: "_id",
+          foreignField: "followerId",
+          as: "followingData",
+        },
+      },
+      { $unwind: { path: "$followingData", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "followingData.followingId",
+          foreignField: "_id",
+          as: "followingUser",
+        },
+      },
+      { $unwind: { path: "$followingUser", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$_id",
+          user: { $first: "$user" },
+          followers: { $first: "$followers" },
+          following: {
+            $push: {
+              _id: "$followingUser._id",
+              username: "$followingUser.username",
+              name: "$followingUser.name",
+            },
+          },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              "$user",
+              { followers: "$followers", following: "$following" },
+            ],
+          },
+        },
+      },
+    ];
+    const result = await this.collection().aggregate(pipeline).toArray();
+    return result[0] || null;
   }
 
   static async getUserByEmail(email) {

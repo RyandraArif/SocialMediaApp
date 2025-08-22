@@ -28,7 +28,7 @@ const typeDefs = `#graphql
   }
 
   type Query {
-    getPost: [Post!]!
+    getPosts: [Post!]!
     getPostById(postId: ID!): Post
     getPostsByUser(authorId: ID!): [Post!]!
   }
@@ -42,7 +42,7 @@ const typeDefs = `#graphql
 
 const resolvers = {
   Query: {
-    getPost: async () => {
+    getPosts: async () => {
       // await auth();
       const postCache = await redis.get("postCache");
       if (postCache) {
@@ -50,7 +50,7 @@ const resolvers = {
         return JSON.parse(postCache);
       }
 
-      const posts = await PostModel.getPost();
+      const posts = await PostModel.getPosts();
       await redis.set("postCache", JSON.stringify(posts));
       console.log("masuk db");
 
@@ -60,7 +60,9 @@ const resolvers = {
       }));
     },
     getPostById: async (_, { postId }) => {
-      return await PostModel.getPostById(postId);
+      const post = await PostModel.getPostById(postId);
+      // Nama author sudah tersedia di hasil aggregation
+      return post ? { ...post, authorName: post.author.name } : null;
     },
     getPostsByUser: async (_, { authorId }) => {
       return await PostModel.getPostsByUser(authorId);
@@ -73,7 +75,9 @@ const resolvers = {
       { auth }
     ) => {
       await auth();
-      return await PostModel.addPost({ content, authorId, tags, imgUrl });
+      const post = await PostModel.addPost({ content, authorId, tags, imgUrl });
+      await redis.del("postCache");
+      return post;
     },
     addComment: async (_, { postId, username, content }, { auth }) => {
       await auth();
