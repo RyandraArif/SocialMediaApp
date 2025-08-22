@@ -1,3 +1,4 @@
+const redis = require("../config/redis");
 const PostModel = require("../models/PostModel");
 
 const typeDefs = `#graphql
@@ -27,7 +28,7 @@ const typeDefs = `#graphql
   }
 
   type Query {
-    getAllPosts: [Post!]!
+    getPost: [Post!]!
     getPostById(postId: ID!): Post
     getPostsByUser(authorId: ID!): [Post!]!
   }
@@ -41,8 +42,22 @@ const typeDefs = `#graphql
 
 const resolvers = {
   Query: {
-    getAllPosts: async () => {
-      return await PostModel.getAllPosts();
+    getPost: async () => {
+      // await auth();
+      const postCache = await redis.get("postCache");
+      if (postCache) {
+        console.log("masuk cache");
+        return JSON.parse(postCache);
+      }
+
+      const posts = await PostModel.getPost();
+      await redis.set("postCache", JSON.stringify(posts));
+      console.log("masuk db");
+
+      return posts.map((post) => ({
+        ...post,
+        authorName: post.author.name,
+      }));
     },
     getPostById: async (_, { postId }) => {
       return await PostModel.getPostById(postId);

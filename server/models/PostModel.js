@@ -32,8 +32,21 @@ class PostModel {
     return await this.collection().findOne({ _id: result.insertedId });
   }
 
-  static async getAllPosts() {
-    return await this.collection().find().sort({ createdAt: -1 }).toArray();
+  static async getPost() {
+    return await this.collection()
+      .aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "authorId",
+            foreignField: "_id",
+            as: "author",
+          },
+        },
+        { $unwind: "$author" },
+      ])
+      .toArray();
   }
 
   static async getPostById(postId) {
