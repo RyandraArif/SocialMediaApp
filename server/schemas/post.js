@@ -5,11 +5,11 @@ const typeDefs = `#graphql
   type Post {
     _id: ID!
     content: String!
-    tags: [String!]
+    tags: [String]
     imgUrl: String
     authorId: ID!
-    comments: [Comment!]
-    likes: [Like!]
+    comments: [Comment]
+    likes: [Like]
     createdAt: String!
     updatedAt: String!
   }
@@ -17,26 +17,26 @@ const typeDefs = `#graphql
   type Comment {
     content: String!
     username: String!
-    createdAt: String!
-    updatedAt: String!
+    createdAt: String
+    updatedAt: String
   }
 
   type Like {
     username: String!
-    createdAt: String!
-    updatedAt: String!
+    createdAt: String
+    updatedAt: String
   }
 
   type Query {
-    getPosts: [Post!]!
+    getPost: [Post]
     getPostById(postId: ID!): Post
-    getPostsByUser(authorId: ID!): [Post!]!
+    getPostsByUser(authorId: ID!): [Post]
   }
 
   type Mutation {
-    addPost(content: String!, authorId: ID!, tags: [String], imgUrl: String): Post!
-    addComment(postId: ID!, username: String!, content: String!): String!
-    addLike(postId: ID!, username: String!): String!
+    addPost(content: String!, authorId: ID!, tags: [String], imgUrl: String): Post
+    addComment(postId: ID!, username: String!, content: String!): String
+    addLike(postId: ID!, username: String!): String
   }
 `;
 
