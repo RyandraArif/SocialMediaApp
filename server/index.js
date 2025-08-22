@@ -1,7 +1,8 @@
 require("dotenv").config();
 const { ApolloServer } = require("@apollo/server");
 const { startStandaloneServer } = require("@apollo/server/standalone");
-const { verifyToken } = require("./helpers/bcrypt");
+const { verifyToken } = require("./helpers/jwt");
+const { UserModel } = require("./models/UserModel");
 
 const { userTypeDefs, userResolvers } = require("./schemas/user");
 const { postTypeDefs, postResolvers } = require("./schemas/post");
@@ -33,7 +34,7 @@ startStandaloneServer(server, {
           throw new Error("Invalid token");
         }
 
-        const user = await UserModel.findById(decoded.userId);
+        const user = await UserModel.getUserById(decoded.userId);
         if (!user) {
           throw new Error("User not found");
         }

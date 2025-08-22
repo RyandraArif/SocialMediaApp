@@ -1,6 +1,7 @@
 const { hashPassword, comparePassword } = require("../helpers/bcrypt");
 const { signToken } = require("../helpers/jwt");
 const { UserModel } = require("../models/UserModel");
+const FollowModel = require("../models/FollowModel");
 
 const typeDefs = `#graphql
   type User {
@@ -16,9 +17,17 @@ const typeDefs = `#graphql
     message: String
   }
 
+  type Profile {
+    name: String
+    username: String
+    email: String
+    followers: [ID!]
+    following: [ID!]
+  }
+
   type Query {
     searchUsers(query: String!): [User!]!
-    getUserById(userId: ID!): User
+    getUserById(userId: ID!): Profile
   }
 
   type Mutation {
@@ -34,7 +43,30 @@ const resolvers = {
     },
     getUserById: async (_, { userId }, { auth }) => {
       await auth();
-      return await UserModel.getUserById(userId);
+      const user = await UserModel.getUserById(userId);
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const rawFollowers = (await FollowModel.getFollowers(userId)) || [];
+      const rawFollowing = (await FollowModel.getFollowing(userId)) || [];
+
+      const followers = rawFollowers.map((f) => {
+        return f.followerId.toString();
+      });
+
+      const following = rawFollowing.map((f) => {
+        return f.followingId.toString();
+      });
+
+      return {
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        followers,
+        following,
+      };
     },
   },
   Mutation: {
